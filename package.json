@@ -1,7 +1,7 @@
 {
-    "name": "obsidian-hiver-plugin",
+    "name": "obsidian-folderize-plugin",
     "version": "0.1.0",
-    "description": "Organize attachments using content-addressed storage (hive structure)",
+    "description": "Organize your Obsidian attachments automatically.",
     "author": "Jason Heddings",
     "license": "MIT",
     "keywords": [],

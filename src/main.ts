@@ -2,7 +2,7 @@ import { App, Plugin, PluginSettingTab, Setting, Notice, TFile, TFolder } from "
 import { createHash } from "crypto";
 import * as path from "path";
 
-interface HiverSettings {
+interface FolderizeSettings {
     attachmentPath: string;
     chunkSize: number;
     pathDepth: number;
@@ -10,7 +10,7 @@ interface HiverSettings {
     removeEmptyFolders: boolean;
 }
 
-const DEFAULT_SETTINGS: HiverSettings = {
+const DEFAULT_SETTINGS: FolderizeSettings = {
     attachmentPath: "Attachments",
     chunkSize: 4096,
     pathDepth: 4,
@@ -18,28 +18,24 @@ const DEFAULT_SETTINGS: HiverSettings = {
     removeEmptyFolders: true,
 };
 
-export default class HiverPlugin extends Plugin {
-    settings: HiverSettings;
+export default class FolderizePlugin extends Plugin {
+    settings: FolderizeSettings;
 
     async onload() {
         await this.loadSettings();
 
-        // Add command to organize attachments
         this.addCommand({
             id: "organize-attachments",
-            name: "Organize attachments into hive structure",
+            name: "Organize all attachments",
             callback: () => this.organizeAttachments(),
         });
 
-        // Add settings tab
-        this.addSettingTab(new HiverSettingTab(this.app, this));
+        this.addSettingTab(new FolderizeSettingTab(this.app, this));
 
-        // Auto-organize on file creation if enabled
         if (this.settings.enableAutoOrganize) {
             this.registerEvent(
                 this.app.vault.on("create", (file) => {
                     if (file instanceof TFile && this.isAttachment(file)) {
-                        // Delay to ensure file is fully written
                         setTimeout(() => this.organizeFile(file), 1000);
                     }
                 })
@@ -56,7 +52,6 @@ export default class HiverPlugin extends Plugin {
     }
 
     private isAttachment(file: TFile): boolean {
-        // Check if file is in the attachments folder
         const attachmentPath = this.settings.attachmentPath;
         return file.path.startsWith(attachmentPath + "/") || file.path === attachmentPath;
     }
@@ -82,7 +77,7 @@ export default class HiverPlugin extends Plugin {
         }
     }
 
-    private generateHivePath(checksum: Buffer): string {
+    private generatePath(checksum: Buffer): string {
         const parts = [this.settings.attachmentPath];
 
         for (let i = 0; i < this.settings.pathDepth && i < checksum.length; i++) {
@@ -95,24 +90,21 @@ export default class HiverPlugin extends Plugin {
     private async organizeFile(file: TFile): Promise<void> {
         try {
             const checksum = await this.calculateChecksum(file.path);
-            const hivePath = this.generateHivePath(checksum);
+            const hivePath = this.generatePath(checksum);
             const fileName = path.basename(file.path);
             const newPath = `${hivePath}/${fileName}`;
 
-            // Don't move if already in correct location
             if (file.path === newPath) {
                 return;
             }
 
-            // Create directory structure if needed
+            // create directory structure if needed
             const dir = path.dirname(newPath);
             if (!(await this.app.vault.adapter.exists(dir))) {
                 await this.createDirectoryRecursive(dir);
             }
 
-            // Move the file
             await this.app.vault.rename(file, newPath);
-
             console.log(`Moved ${file.path} to ${newPath}`);
         } catch (error) {
             console.error(`Error organizing file ${file.path}:`, error);
@@ -140,6 +132,7 @@ export default class HiverPlugin extends Plugin {
             const attachmentFolder = this.app.vault.getAbstractFileByPath(
                 this.settings.attachmentPath
             );
+
             if (!attachmentFolder || !(attachmentFolder instanceof TFolder)) {
                 new Notice("Attachment folder not found");
                 return;
@@ -155,7 +148,6 @@ export default class HiverPlugin extends Plugin {
 
             new Notice(`Organized ${processedCount} attachments`);
 
-            // Clean up empty directories after organizing if enabled
             if (this.settings.removeEmptyFolders) {
                 await this.cleanEmptyDirectories();
             }
@@ -191,7 +183,6 @@ export default class HiverPlugin extends Plugin {
             const emptyFolders = this.findEmptyFolders(attachmentFolder);
             let removedCount = 0;
 
-            // Remove empty folders (deepest first)
             for (const folder of emptyFolders.reverse()) {
                 try {
                     await this.app.vault.delete(folder);
@@ -215,10 +206,8 @@ export default class HiverPlugin extends Plugin {
 
         for (const child of folder.children) {
             if (child instanceof TFolder) {
-                // Recursively check subfolders first
                 emptyFolders.push(...this.findEmptyFolders(child));
 
-                // Check if this folder is empty (no files, only empty subfolders)
                 const hasFiles = child.children.some((c) => c instanceof TFile);
                 const hasNonEmptyFolders = child.children.some(
                     (c) => c instanceof TFolder && !emptyFolders.includes(c)
@@ -234,10 +223,10 @@ export default class HiverPlugin extends Plugin {
     }
 }
 
-class HiverSettingTab extends PluginSettingTab {
-    plugin: HiverPlugin;
+class FolderizeSettingTab extends PluginSettingTab {
+    plugin: FolderizePlugin;
 
-    constructor(app: App, plugin: HiverPlugin) {
+    constructor(app: App, plugin: FolderizePlugin) {
         super(app, plugin);
         this.plugin = plugin;
     }
@@ -246,7 +235,7 @@ class HiverSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        containerEl.createEl("h2", { text: "Hiver Settings" });
+        containerEl.createEl("h2", { text: "Folderize Settings" });
 
         new Setting(containerEl)
             .setName("Attachment path")
@@ -299,7 +288,7 @@ class HiverSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Path depth")
-            .setDesc("Number of directory levels to create in hive structure")
+            .setDesc("Number of directory levels to create in folder structure")
             .addText((text) =>
                 text
                     .setPlaceholder("4")
