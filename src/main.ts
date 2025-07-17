@@ -287,6 +287,8 @@ class FolderizeSettingTab extends PluginSettingTab {
                 })
             );
 
+        containerEl.createEl("h3", { text: "Advanced Settings" });
+
         new Setting(containerEl)
             .setName("Chunk size")
             .setDesc("Size of chunks when reading files for checksum (bytes)")
