@@ -1,6 +1,7 @@
 import { App, Plugin, PluginSettingTab, Setting, Notice, TFile, TFolder } from "obsidian";
 import { createHash } from "crypto";
 import * as path from "path";
+import { Logger, LogLevel } from "./logger";
 
 interface FolderizeSettings {
     attachmentPath: string;
@@ -8,6 +9,7 @@ interface FolderizeSettings {
     pathDepth: number;
     enableAutoOrganize: boolean;
     removeEmptyFolders: boolean;
+    logLevel: LogLevel;
 }
 
 const DEFAULT_SETTINGS: FolderizeSettings = {
@@ -16,13 +18,17 @@ const DEFAULT_SETTINGS: FolderizeSettings = {
     pathDepth: 4,
     enableAutoOrganize: false,
     removeEmptyFolders: true,
+    logLevel: LogLevel.ERROR,
 };
 
 export default class FolderizePlugin extends Plugin {
     settings: FolderizeSettings;
+    logger: any;
 
     async onload() {
         await this.loadSettings();
+        this.logger = Logger.getLogger("main");
+        Logger.setGlobalLogLevel(this.settings.logLevel);
 
         this.addCommand({
             id: "organize-attachments",
@@ -49,6 +55,7 @@ export default class FolderizePlugin extends Plugin {
 
     async saveSettings() {
         await this.saveData(this.settings);
+        Logger.setGlobalLogLevel(this.settings.logLevel);
     }
 
     private isAttachment(file: TFile): boolean {
@@ -72,7 +79,7 @@ export default class FolderizePlugin extends Plugin {
 
             return hash.digest();
         } catch (error) {
-            console.error("Error calculating checksum:", error);
+            this.logger.error("Error calculating checksum:", error);
             throw error;
         }
     }
@@ -89,25 +96,28 @@ export default class FolderizePlugin extends Plugin {
 
     private async organizeFile(file: TFile): Promise<void> {
         try {
+            this.logger.debug(`Starting organization of file: ${file.path}`);
             const checksum = await this.calculateChecksum(file.path);
             const hivePath = this.generatePath(checksum);
             const fileName = path.basename(file.path);
             const newPath = `${hivePath}/${fileName}`;
 
             if (file.path === newPath) {
+                this.logger.debug(`File ${file.path} is already in correct location`);
                 return;
             }
 
             // create directory structure if needed
             const dir = path.dirname(newPath);
             if (!(await this.app.vault.adapter.exists(dir))) {
+                this.logger.debug(`Creating directory structure: ${dir}`);
                 await this.createDirectoryRecursive(dir);
             }
 
             await this.app.vault.rename(file, newPath);
-            console.log(`Moved ${file.path} to ${newPath}`);
+            this.logger.info(`Moved ${file.path} to ${newPath}`);
         } catch (error) {
-            console.error(`Error organizing file ${file.path}:`, error);
+            this.logger.error(`Error organizing file ${file.path}:`, error);
             new Notice(`Error organizing ${file.name}: ${error.message}`);
         }
     }
@@ -127,6 +137,7 @@ export default class FolderizePlugin extends Plugin {
 
     private async organizeAttachments(): Promise<void> {
         try {
+            this.logger.debug("Starting attachment organization");
             new Notice("Organizing attachments...");
 
             const attachmentFolder = this.app.vault.getAbstractFileByPath(
@@ -134,11 +145,13 @@ export default class FolderizePlugin extends Plugin {
             );
 
             if (!attachmentFolder || !(attachmentFolder instanceof TFolder)) {
+                this.logger.warn(`Attachment folder not found: ${this.settings.attachmentPath}`);
                 new Notice("Attachment folder not found");
                 return;
             }
 
             const files = this.getAllFiles(attachmentFolder);
+            this.logger.debug(`Found ${files.length} files to process`);
             let processedCount = 0;
 
             for (const file of files) {
@@ -146,13 +159,14 @@ export default class FolderizePlugin extends Plugin {
                 processedCount++;
             }
 
+            this.logger.debug(`Organization complete. Processed ${processedCount} files`);
             new Notice(`Organized ${processedCount} attachments`);
 
             if (this.settings.removeEmptyFolders) {
                 await this.cleanEmptyDirectories();
             }
         } catch (error) {
-            console.error("Error organizing attachments:", error);
+            this.logger.error("Error organizing attachments:", error);
             new Notice(`Error organizing attachments: ${error.message}`);
         }
     }
@@ -173,6 +187,7 @@ export default class FolderizePlugin extends Plugin {
 
     private async cleanEmptyDirectories(): Promise<void> {
         try {
+            this.logger.debug("Starting empty directory cleanup");
             const attachmentFolder = this.app.vault.getAbstractFileByPath(
                 this.settings.attachmentPath
             );
@@ -181,23 +196,25 @@ export default class FolderizePlugin extends Plugin {
             }
 
             const emptyFolders = this.findEmptyFolders(attachmentFolder);
+            this.logger.debug(`Found ${emptyFolders.length} empty folders to remove`);
             let removedCount = 0;
 
             for (const folder of emptyFolders.reverse()) {
                 try {
                     await this.app.vault.delete(folder);
                     removedCount++;
-                    console.log(`Removed empty directory: ${folder.path}`);
+                    this.logger.debug(`Removed empty directory: ${folder.path}`);
                 } catch (error) {
-                    console.error(`Error removing directory ${folder.path}:`, error);
+                    this.logger.error(`Error removing directory ${folder.path}:`, error);
                 }
             }
 
             if (removedCount > 0) {
+                this.logger.debug(`Cleanup complete. Removed ${removedCount} empty directories`);
                 new Notice(`Removed ${removedCount} empty directories`);
             }
         } catch (error) {
-            console.error("Error cleaning empty directories:", error);
+            this.logger.error("Error cleaning empty directories:", error);
         }
     }
 
@@ -299,6 +316,22 @@ class FolderizeSettingTab extends PluginSettingTab {
                             this.plugin.settings.pathDepth = num;
                             await this.plugin.saveSettings();
                         }
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Log level")
+            .setDesc("Adjust the log level in the console")
+            .addDropdown((dropdown) =>
+                dropdown
+                    .addOption(LogLevel.ERROR.toString(), "Error")
+                    .addOption(LogLevel.WARN.toString(), "Warn")
+                    .addOption(LogLevel.INFO.toString(), "Info")
+                    .addOption(LogLevel.DEBUG.toString(), "Debug")
+                    .setValue(this.plugin.settings.logLevel.toString())
+                    .onChange(async (value: string) => {
+                        this.plugin.settings.logLevel = parseInt(value) as LogLevel;
+                        await this.plugin.saveSettings();
                     })
             );
     }
