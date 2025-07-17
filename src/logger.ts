@@ -27,19 +27,27 @@ class LoggerInstance {
     }
 
     debug(message: string, ...args: any[]): void {
-        this.log(message, ...args);
+        if (this.shouldLog(LogLevel.DEBUG)) {
+            this.log(message, ...args);
+        }
     }
 
     info(message: string, ...args: any[]): void {
-        this.log(message, ...args);
+        if (this.shouldLog(LogLevel.INFO)) {
+            this.log(message, ...args);
+        }
     }
 
     warn(message: string, ...args: any[]): void {
-        this.log(message, ...args);
+        if (this.shouldLog(LogLevel.WARN)) {
+            this.log(message, ...args);
+        }
     }
 
     error(message: string, ...args: any[]): void {
-        this.log(message, ...args);
+        if (this.shouldLog(LogLevel.ERROR)) {
+            this.log(message, ...args);
+        }
     }
 }
 
@@ -48,10 +56,14 @@ export class Logger {
     private static globalLogLevel: LogLevel = LogLevel.ERROR;
 
     static getLogger(name: string): LoggerInstance {
-        if (!Logger.loggers.has(name)) {
-            Logger.loggers.set(name, new LoggerInstance(name, Logger.globalLogLevel));
+        let logger;
+        if (Logger.loggers.has(name)) {
+            logger = Logger.loggers.get(name)!;
+        } else {
+            logger = new LoggerInstance(name, Logger.globalLogLevel);
+            Logger.loggers.set(name, logger);
         }
-        return Logger.loggers.get(name)!;
+        return logger;
     }
 
     static setGlobalLogLevel(level: LogLevel): void {
