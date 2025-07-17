@@ -1,0 +1,46 @@
+{
+    "name": "obsidian-hiver-plugin",
+    "version": "0.1.0",
+    "description": "Organize attachments using content-addressed storage (hive structure)",
+    "author": "Jason Heddings",
+    "license": "MIT",
+    "keywords": [],
+    "main": "main.js",
+    "scripts": {
+        "prepare": "husky install",
+        "dev": "node esbuild.config.mjs",
+        "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+        "format": "prettier --write .",
+        "lint": "eslint --fix .",
+        "preflight": "npm run build && npm test && npm run format && npm run lint",
+        "version": "node version.mjs && git add manifest.json versions.json",
+        "postversion": "git commit --amend -m \"obsidian-hiver-$npm_package_version\""
+    },
+    "devDependencies": {
+        "@types/node": "^16.11.6",
+        "@typescript-eslint/eslint-plugin": "5.29.0",
+        "@typescript-eslint/parser": "5.29.0",
+        "builtin-modules": "3.3.0",
+        "esbuild": "0.17.3",
+        "eslint": "^8.57.1",
+        "eslint-config-prettier": "^10.1.5",
+        "eslint-plugin-prettier": "^5.5.1",
+        "husky": "^8.0.0",
+        "lint-staged": "^16.1.2",
+        "obsidian": "latest",
+        "prettier": "^3.6.2",
+        "tslib": "2.4.0",
+        "typescript": "4.7.4"
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "lint-staged"
+        }
+    },
+    "lint-staged": {
+        "*.{js,jsx,ts,tsx,json,css,scss,md}": [
+            "prettier --write",
+            "eslint --fix"
+        ]
+    }
+}
