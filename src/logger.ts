@@ -5,7 +5,7 @@ export enum LogLevel {
     ERROR = 0,
 }
 
-class LoggerInstance {
+export class LoggerInstance {
     private name: string;
     private logLevel: LogLevel;
 
@@ -22,31 +22,31 @@ class LoggerInstance {
         return level <= this.logLevel;
     }
 
-    log(message: string, ...args: any[]): void {
-        console.log(`[Folderize:${this.name}] ${message}`, ...args);
+    log(level: string, message: string, ...args: any[]): void {
+        console.log(`[${level}] Folderize:${this.name} -- ${message}`, ...args);
     }
 
     debug(message: string, ...args: any[]): void {
         if (this.shouldLog(LogLevel.DEBUG)) {
-            this.log(message, ...args);
+            this.log("DEBUG", message, ...args);
         }
     }
 
     info(message: string, ...args: any[]): void {
         if (this.shouldLog(LogLevel.INFO)) {
-            this.log(message, ...args);
+            this.log("INFO", message, ...args);
         }
     }
 
     warn(message: string, ...args: any[]): void {
         if (this.shouldLog(LogLevel.WARN)) {
-            this.log(message, ...args);
+            this.log("WARN", message, ...args);
         }
     }
 
     error(message: string, ...args: any[]): void {
         if (this.shouldLog(LogLevel.ERROR)) {
-            this.log(message, ...args);
+            this.log("ERROR", message, ...args);
         }
     }
 }
