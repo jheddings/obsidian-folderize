@@ -1,7 +1,7 @@
 {
     "id": "obsidian-folderize",
     "name": "Folderize",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "minAppVersion": "0.15.0",
     "description": "Organize your Obsidian attachments automatically.",
     "author": "Jason Heddings",
