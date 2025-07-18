@@ -24,7 +24,7 @@
         "@typescript-eslint/parser": "8.37.0",
         "builtin-modules": "3.3.0",
         "esbuild": "0.17.3",
-        "eslint": "^8.57.1",
+        "eslint": "^9.31.0",
         "eslint-config-prettier": "^10.1.7",
         "eslint-plugin-prettier": "^5.5.1",
         "husky": "^9.1.7",
