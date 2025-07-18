@@ -14,8 +14,9 @@
         "lint": "eslint --fix .",
         "test": "npm run build",
         "preflight": "npm run build && npm test && npm run format && npm run lint",
+        "release": "npm run preflight && git push origin v$npm_package_version",
         "version": "node version.mjs && git add manifest.json versions.json",
-        "postversion": "git commit --amend -m \"obsidian-hiver-$npm_package_version\""
+        "postversion": "git commit --amend -m \"obsidian-folderize-$npm_package_version\""
     },
     "devDependencies": {
         "@types/node": "^16.11.6",
