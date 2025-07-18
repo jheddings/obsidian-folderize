@@ -16,6 +16,7 @@ export default class FolderizePlugin extends Plugin {
     logger: any;
     private directoryManager: DirectoryManager;
     private fileOrganizer: FileOrganizer;
+    private autoOrganizeEventRef: any;
 
     async onload() {
         await this.loadSettings();
@@ -34,8 +35,35 @@ export default class FolderizePlugin extends Plugin {
 
         this.addSettingTab(new FolderizeSettingTab(this.app, this));
 
+        this.applySettings();
+    }
+
+    onunload() {
+        this.unregisterAutoOrganize();
+    }
+
+    async loadSettings() {
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    }
+
+    async saveSettings() {
+        await this.saveData(this.settings);
+        this.applySettings();
+    }
+
+    private applySettings(): void {
+        Logger.setGlobalLogLevel(this.settings.logLevel);
+
         if (this.settings.enableAutoOrganize) {
-            this.registerEvent(
+            this.registerAutoOrganize();
+        } else {
+            this.unregisterAutoOrganize();
+        }
+    }
+
+    private registerAutoOrganize(): void {
+        if (!this.autoOrganizeEventRef) {
+            this.autoOrganizeEventRef = this.registerEvent(
                 this.app.vault.on("create", (file) => {
                     if (file instanceof TFile && this.isAttachment(file)) {
                         setTimeout(() => this.organizeFile(file), 1000);
@@ -45,13 +73,11 @@ export default class FolderizePlugin extends Plugin {
         }
     }
 
-    async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-    }
-
-    async saveSettings() {
-        await this.saveData(this.settings);
-        Logger.setGlobalLogLevel(this.settings.logLevel);
+    private unregisterAutoOrganize(): void {
+        if (this.autoOrganizeEventRef) {
+            this.app.vault.offref(this.autoOrganizeEventRef);
+            this.autoOrganizeEventRef = null;
+        }
     }
 
     private isAttachment(file: TFile): boolean {
