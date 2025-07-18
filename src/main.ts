@@ -1,10 +1,9 @@
 import { App, Plugin, PluginSettingTab, Setting, TFile } from "obsidian";
-import { Logger, LogLevel } from "./logger";
+import { Logger, LogLevel, LoggerInstance } from "./logger";
 import { DirectoryManager, FileOrganizer, FolderizeSettings } from "./organize";
 
 const DEFAULT_SETTINGS: FolderizeSettings = {
     attachmentPath: "Attachments",
-    chunkSize: 4096,
     pathDepth: 4,
     enableAutoOrganize: false,
     removeEmptyFolders: true,
@@ -13,7 +12,8 @@ const DEFAULT_SETTINGS: FolderizeSettings = {
 
 export default class FolderizePlugin extends Plugin {
     settings: FolderizeSettings;
-    logger: any;
+    logger: LoggerInstance;
+
     private directoryManager: DirectoryManager;
     private fileOrganizer: FileOrganizer;
     private autoOrganizeEventRef: any;
@@ -23,7 +23,6 @@ export default class FolderizePlugin extends Plugin {
         this.logger = Logger.getLogger("main");
         Logger.setGlobalLogLevel(this.settings.logLevel);
 
-        // Initialize organization components
         this.directoryManager = new DirectoryManager(this.app);
         this.fileOrganizer = new FileOrganizer(this.app, this.directoryManager);
 
@@ -62,15 +61,17 @@ export default class FolderizePlugin extends Plugin {
     }
 
     private registerAutoOrganize(): void {
-        if (!this.autoOrganizeEventRef) {
-            this.autoOrganizeEventRef = this.registerEvent(
-                this.app.vault.on("create", (file) => {
-                    if (file instanceof TFile && this.isAttachment(file)) {
-                        setTimeout(() => this.organizeFile(file), 1000);
-                    }
-                })
-            );
+        if (this.autoOrganizeEventRef) {
+            return;
         }
+
+        this.autoOrganizeEventRef = this.registerEvent(
+            this.app.vault.on("create", (file) => {
+                if (file instanceof TFile && this.isAttachment(file)) {
+                    setTimeout(() => this.organizeFile(file), 1000);
+                }
+            })
+        );
     }
 
     private unregisterAutoOrganize(): void {
@@ -142,22 +143,6 @@ class FolderizeSettingTab extends PluginSettingTab {
             );
 
         containerEl.createEl("h3", { text: "Advanced Settings" });
-
-        new Setting(containerEl)
-            .setName("Chunk size")
-            .setDesc("Size of chunks when reading files for checksum (bytes)")
-            .addText((text) =>
-                text
-                    .setPlaceholder("4096")
-                    .setValue(this.plugin.settings.chunkSize.toString())
-                    .onChange(async (value) => {
-                        const num = parseInt(value);
-                        if (!isNaN(num) && num > 0) {
-                            this.plugin.settings.chunkSize = num;
-                            await this.plugin.saveSettings();
-                        }
-                    })
-            );
 
         new Setting(containerEl)
             .setName("Path depth")
