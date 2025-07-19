@@ -27,7 +27,7 @@ export default class FolderizePlugin extends Plugin {
         this.fileOrganizer = new FileOrganizer(this.app, this.directoryManager);
 
         this.addCommand({
-            id: "organize-attachments",
+            id: "folderize-organize-attachments",
             name: "Organize all attachments",
             callback: () => this.organizeAttachments(),
         });
