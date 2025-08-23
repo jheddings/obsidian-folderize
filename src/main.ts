@@ -1,18 +1,10 @@
-import { App, Plugin, PluginSettingTab, Setting, TFile } from "obsidian";
-import { Logger, LogLevel, LoggerInstance } from "./logger";
+import { Plugin, TFile } from "obsidian";
+import { Logger } from "obskit";
 import { DirectoryManager, FileOrganizer, FolderizeSettings } from "./organize";
-
-const DEFAULT_SETTINGS: FolderizeSettings = {
-    attachmentPath: "Attachments",
-    pathDepth: 4,
-    enableAutoOrganize: false,
-    removeEmptyFolders: true,
-    logLevel: LogLevel.WARN,
-};
+import { DEFAULT_SETTINGS, FolderizeSettingsTab } from "./settings";
 
 export default class FolderizePlugin extends Plugin {
     settings: FolderizeSettings;
-    logger: LoggerInstance;
 
     private directoryManager: DirectoryManager;
     private fileOrganizer: FileOrganizer;
@@ -20,7 +12,6 @@ export default class FolderizePlugin extends Plugin {
 
     async onload() {
         await this.loadSettings();
-        this.logger = Logger.getLogger("main");
         Logger.setGlobalLogLevel(this.settings.logLevel);
 
         this.directoryManager = new DirectoryManager(this.app);
@@ -32,7 +23,7 @@ export default class FolderizePlugin extends Plugin {
             callback: () => this.organizeAttachments(),
         });
 
-        this.addSettingTab(new FolderizeSettingTab(this.app, this));
+        this.addSettingTab(new FolderizeSettingsTab(this.app, this));
 
         this.applySettings();
     }
@@ -53,7 +44,7 @@ export default class FolderizePlugin extends Plugin {
     private applySettings(): void {
         Logger.setGlobalLogLevel(this.settings.logLevel);
 
-        if (this.settings.enableAutoOrganize) {
+        if (this.settings.autoOrganize) {
             this.registerAutoOrganize();
         } else {
             this.unregisterAutoOrganize();
@@ -92,88 +83,5 @@ export default class FolderizePlugin extends Plugin {
 
     private async organizeAttachments(): Promise<void> {
         await this.fileOrganizer.organizeAttachments(this.settings);
-    }
-}
-
-class FolderizeSettingTab extends PluginSettingTab {
-    plugin: FolderizePlugin;
-
-    constructor(app: App, plugin: FolderizePlugin) {
-        super(app, plugin);
-        this.plugin = plugin;
-    }
-
-    display(): void {
-        const { containerEl } = this;
-        containerEl.empty();
-
-        containerEl.createEl("h2", { text: "Folderize Settings" });
-
-        new Setting(containerEl)
-            .setName("Attachment path")
-            .setDesc("Path to the attachments folder")
-            .addText((text) =>
-                text
-                    .setPlaceholder("attachments")
-                    .setValue(this.plugin.settings.attachmentPath)
-                    .onChange(async (value) => {
-                        this.plugin.settings.attachmentPath = value;
-                        await this.plugin.saveSettings();
-                    })
-            );
-
-        new Setting(containerEl)
-            .setName("Auto-organize")
-            .setDesc("Automatically organize attachments when they are added")
-            .addToggle((toggle) =>
-                toggle.setValue(this.plugin.settings.enableAutoOrganize).onChange(async (value) => {
-                    this.plugin.settings.enableAutoOrganize = value;
-                    await this.plugin.saveSettings();
-                })
-            );
-
-        new Setting(containerEl)
-            .setName("Remove empty folders")
-            .setDesc("Remove empty directories when organizing attachments")
-            .addToggle((toggle) =>
-                toggle.setValue(this.plugin.settings.removeEmptyFolders).onChange(async (value) => {
-                    this.plugin.settings.removeEmptyFolders = value;
-                    await this.plugin.saveSettings();
-                })
-            );
-
-        containerEl.createEl("h3", { text: "Advanced Settings" });
-
-        new Setting(containerEl)
-            .setName("Path depth")
-            .setDesc("Number of directory levels to create in folder structure")
-            .addText((text) =>
-                text
-                    .setPlaceholder("4")
-                    .setValue(this.plugin.settings.pathDepth.toString())
-                    .onChange(async (value) => {
-                        const num = parseInt(value);
-                        if (!isNaN(num) && num > 0 && num <= 8) {
-                            this.plugin.settings.pathDepth = num;
-                            await this.plugin.saveSettings();
-                        }
-                    })
-            );
-
-        new Setting(containerEl)
-            .setName("Log level")
-            .setDesc("Adjust the log level in the console")
-            .addDropdown((dropdown) =>
-                dropdown
-                    .addOption(LogLevel.ERROR.toString(), "Error")
-                    .addOption(LogLevel.WARN.toString(), "Warn")
-                    .addOption(LogLevel.INFO.toString(), "Info")
-                    .addOption(LogLevel.DEBUG.toString(), "Debug")
-                    .setValue(this.plugin.settings.logLevel.toString())
-                    .onChange(async (value: string) => {
-                        this.plugin.settings.logLevel = parseInt(value) as LogLevel;
-                        await this.plugin.saveSettings();
-                    })
-            );
     }
 }
