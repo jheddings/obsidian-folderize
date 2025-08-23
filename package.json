@@ -10,10 +10,12 @@
         "prepare": "husky",
         "dev": "node esbuild.config.mjs",
         "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+        "lint": "eslint src",
+        "lint:fix": "eslint src --fix",
         "format": "prettier --write .",
-        "lint": "eslint --fix .",
+        "format:check": "prettier --check .",
         "test": "npm run build",
-        "preflight": "npm run build && npm test && npm run format && npm run lint",
+        "preflight": "npm run build && npm run format && npm run lint:fix && npm test",
         "release": "npm run preflight && git push && git push --tags",
         "version": "node version.mjs && npm run format && git add manifest.json versions.json",
         "postversion": "git commit --amend -m \"obsidian-folderize-$npm_package_version\" && git tag -f $npm_package_version"
@@ -44,5 +46,8 @@
             "prettier --write",
             "eslint --fix"
         ]
+    },
+    "dependencies": {
+        "obskit": "^1.4.1"
     }
 }

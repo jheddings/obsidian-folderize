@@ -1,23 +1,22 @@
 import { App, Notice, TFile, TFolder } from "obsidian";
 import { createHash } from "crypto";
 import * as path from "path";
-import { Logger, LogLevel } from "./logger";
+import { Logger, LogLevel } from "obskit";
 
 export interface FolderizeSettings {
     attachmentPath: string;
     pathDepth: number;
-    enableAutoOrganize: boolean;
+    autoOrganize: boolean;
     removeEmptyFolders: boolean;
     logLevel: LogLevel;
 }
 
 export class DirectoryManager {
     private app: App;
-    private logger: any;
+    private logger = Logger.getLogger("DirectoryManager");
 
     constructor(app: App) {
         this.app = app;
-        this.logger = Logger.getLogger("DirectoryManager");
     }
 
     async mkdirs(dir: string): Promise<void> {
