@@ -48,6 +48,6 @@
         ]
     },
     "dependencies": {
-        "obskit": "^1.4.1"
+        "obskit": "^1.4.2"
     }
 }
