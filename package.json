@@ -21,7 +21,7 @@
         "postversion": "git commit --amend -m \"obsidian-folderize-$npm_package_version\" && git tag -f $npm_package_version"
     },
     "devDependencies": {
-        "@types/node": "^24.10.9",
+        "@types/node": "^24.10.10",
         "@typescript-eslint/eslint-plugin": "8.54.0",
         "@typescript-eslint/parser": "8.54.0",
         "builtin-modules": "5.0.0",
