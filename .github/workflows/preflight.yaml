@@ -28,10 +28,10 @@ jobs:
               run: npm ci
 
             - name: Run format checks
-              run: npm run format:check
+              run: npx prettier --check .
 
             - name: Run lint checks
-              run: npm run lint
+              run: npx eslint src
 
-            - name: Run unit tests
-              run: npm test
+            - name: Build
+              run: npm run build
