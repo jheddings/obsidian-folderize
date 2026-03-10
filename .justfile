@@ -18,9 +18,7 @@ check:
 	npx eslint src
 
 # full preflight: build + check
-preflight: build
-	npx prettier --check .
-	npx eslint src
+preflight: build check
 
 # build the plugin
 build:
