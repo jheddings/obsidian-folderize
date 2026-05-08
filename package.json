@@ -39,6 +39,6 @@
         ]
     },
     "dependencies": {
-        "obskit": "^1.5.0"
+        "obskit": "^2.0.0"
     }
 }
