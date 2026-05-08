@@ -4,10 +4,10 @@ import { DirectoryManager, FileOrganizer, FolderizeSettings } from "./organize";
 import { DEFAULT_SETTINGS, FolderizeSettingsTab } from "./settings";
 
 export default class FolderizePlugin extends Plugin {
-    settings: FolderizeSettings;
+    settings!: FolderizeSettings;
 
-    private directoryManager: DirectoryManager;
-    private fileOrganizer: FileOrganizer;
+    private directoryManager!: DirectoryManager;
+    private fileOrganizer!: FileOrganizer;
     private autoOrganizeEventRef: any;
 
     async onload() {
