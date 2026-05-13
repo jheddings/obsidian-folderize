@@ -10,12 +10,12 @@ setup:
 # auto-format and lint-fix
 tidy:
 	npx prettier --write .
-	npx eslint src --fix
+	npx eslint . --fix
 
 # run format and lint checks (no fix)
 check:
 	npx prettier --check .
-	npx eslint src
+	npx eslint .
 
 # full preflight: build + check
 preflight: build check
