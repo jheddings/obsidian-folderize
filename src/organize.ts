@@ -1,6 +1,4 @@
 import { App, Notice, TFile, TFolder } from "obsidian";
-import { createHash } from "crypto";
-import * as path from "path";
 import { Logger, LogLevel } from "obskit";
 
 export interface FolderizeSettings {
@@ -9,6 +7,16 @@ export interface FolderizeSettings {
     autoOrganize: boolean;
     removeEmptyFolders: boolean;
     logLevel: LogLevel;
+}
+
+function basename(p: string): string {
+    const idx = p.lastIndexOf("/");
+    return idx >= 0 ? p.slice(idx + 1) : p;
+}
+
+function dirname(p: string): string {
+    const idx = p.lastIndexOf("/");
+    return idx >= 0 ? p.slice(0, idx) : "";
 }
 
 export class DirectoryManager {
@@ -59,7 +67,7 @@ export class DirectoryManager {
 
                 if (child.children.length === 0) {
                     this.logger.debug(`Removing empty folder: ${child.path}`);
-                    await this.app.vault.delete(child);
+                    await this.app.fileManager.trashFile(child);
                     this.logger.info(`Removed empty folder: ${child.path}`);
                     removedCount++;
                 }
@@ -71,11 +79,9 @@ export class DirectoryManager {
 }
 
 export class FileOrganizer {
-    private static readonly HASH_CHUNK_SIZE = 4 * 1024;
-
     private app: App;
     private directoryManager: DirectoryManager;
-    private logger: any;
+    private logger: Logger;
 
     constructor(app: App, directoryManager: DirectoryManager) {
         this.app = app;
@@ -83,22 +89,13 @@ export class FileOrganizer {
         this.logger = Logger.getLogger("FileOrganizer");
     }
 
-    private async cksum(filePath: string, chunkSize: number): Promise<Buffer> {
+    private async cksum(filePath: string): Promise<Uint8Array> {
         const data = await this.app.vault.adapter.readBinary(filePath);
-
-        const hash = createHash("sha256");
-        let offset = 0;
-
-        while (offset < data.byteLength) {
-            const chunk = data.slice(offset, offset + chunkSize);
-            hash.update(new Uint8Array(chunk));
-            offset += chunkSize;
-        }
-
-        return hash.digest();
+        const digest = await crypto.subtle.digest("SHA-256", data);
+        return new Uint8Array(digest);
     }
 
-    private generatePath(checksum: Buffer, settings: FolderizeSettings): string {
+    private generatePath(checksum: Uint8Array, settings: FolderizeSettings): string {
         const parts = [settings.attachmentPath];
 
         for (let i = 0; i < settings.pathDepth && i < checksum.length; i++) {
@@ -110,9 +107,9 @@ export class FileOrganizer {
 
     async organizeFile(file: TFile, settings: FolderizeSettings): Promise<void> {
         this.logger.debug(`Organizing file: ${file.path}`);
-        const checksum = await this.cksum(file.path, FileOrganizer.HASH_CHUNK_SIZE);
+        const checksum = await this.cksum(file.path);
         const hivePath = this.generatePath(checksum, settings);
-        const filename = path.basename(file.path);
+        const filename = basename(file.path);
         const newPath = `${hivePath}/${filename}`;
 
         if (file.path === newPath) {
@@ -120,7 +117,7 @@ export class FileOrganizer {
             return;
         }
 
-        const dir = path.dirname(newPath);
+        const dir = dirname(newPath);
         await this.directoryManager.mkdirs(dir);
 
         await this.app.vault.rename(file, newPath);

@@ -35,7 +35,7 @@ export class AttachmentPathSetting extends TextInputSetting {
 
     set value(val: string) {
         this.plugin.settings.attachmentPath = val;
-        this.plugin.saveSettings();
+        void this.plugin.saveSettings();
     }
 
     get default(): string {
@@ -64,7 +64,7 @@ export class AutoOrganizeSetting extends ToggleSetting {
 
     set value(val: boolean) {
         this.plugin.settings.autoOrganize = val;
-        this.plugin.saveSettings();
+        void this.plugin.saveSettings();
     }
 
     get default(): boolean {
@@ -89,7 +89,7 @@ export class RemoveEmptyFoldersSetting extends ToggleSetting {
 
     set value(val: boolean) {
         this.plugin.settings.removeEmptyFolders = val;
-        this.plugin.saveSettings();
+        void this.plugin.saveSettings();
     }
 
     get default(): boolean {
@@ -114,7 +114,7 @@ export class PathDepthSetting extends SliderSetting {
 
     set value(val: number) {
         this.plugin.settings.pathDepth = val;
-        this.plugin.saveSettings();
+        void this.plugin.saveSettings();
     }
 
     get default(): number {
@@ -151,7 +151,7 @@ class LogLevelSetting extends DropdownSetting<LogLevel> {
 
     set value(val: LogLevel) {
         this.plugin.settings.logLevel = val;
-        this.plugin.saveSettings();
+        void this.plugin.saveSettings();
     }
 
     get default(): LogLevel {
@@ -188,7 +188,7 @@ export class FolderizeSettingsTab extends PluginSettingsTab {
         new AutoOrganizeSetting(this.plugin).display(containerEl);
         new RemoveEmptyFoldersSetting(this.plugin).display(containerEl);
 
-        containerEl.createEl("h3", { text: "Advanced Settings" });
+        containerEl.createEl("h3", { text: "Advanced settings" });
 
         new PathDepthSetting(this.plugin).display(containerEl);
         new LogLevelSetting(this.plugin).display(containerEl);
