@@ -1,4 +1,4 @@
-import { Plugin, TFile } from "obsidian";
+import { EventRef, Plugin, TFile } from "obsidian";
 import { Logger } from "obskit";
 import { DirectoryManager, FileOrganizer, FolderizeSettings } from "./organize";
 import { DEFAULT_SETTINGS, FolderizeSettingsTab } from "./settings";
@@ -8,7 +8,7 @@ export default class FolderizePlugin extends Plugin {
 
     private directoryManager: DirectoryManager;
     private fileOrganizer: FileOrganizer;
-    private autoOrganizeEventRef: any;
+    private autoOrganizeEventRef: EventRef | null = null;
 
     async onload() {
         await this.loadSettings();
@@ -18,9 +18,11 @@ export default class FolderizePlugin extends Plugin {
         this.fileOrganizer = new FileOrganizer(this.app, this.directoryManager);
 
         this.addCommand({
-            id: "folderize-organize-attachments",
+            id: "organize-attachments",
             name: "Organize all attachments",
-            callback: () => this.organizeAttachments(),
+            callback: () => {
+                void this.organizeAttachments();
+            },
         });
 
         this.addSettingTab(new FolderizeSettingsTab(this.app, this));
@@ -33,7 +35,8 @@ export default class FolderizePlugin extends Plugin {
     }
 
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        const loaded = (await this.loadData()) as Partial<FolderizeSettings> | null;
+        this.settings = { ...DEFAULT_SETTINGS, ...(loaded ?? {}) };
     }
 
     async saveSettings() {
@@ -56,13 +59,14 @@ export default class FolderizePlugin extends Plugin {
             return;
         }
 
-        this.autoOrganizeEventRef = this.registerEvent(
-            this.app.vault.on("create", (file) => {
-                if (file instanceof TFile && this.isAttachment(file)) {
-                    setTimeout(() => this.organizeFile(file), 1000);
-                }
-            })
-        );
+        this.autoOrganizeEventRef = this.app.vault.on("create", (file) => {
+            if (file instanceof TFile && this.isAttachment(file)) {
+                window.setTimeout(() => {
+                    void this.organizeFile(file);
+                }, 1000);
+            }
+        });
+        this.registerEvent(this.autoOrganizeEventRef);
     }
 
     private unregisterAutoOrganize(): void {
